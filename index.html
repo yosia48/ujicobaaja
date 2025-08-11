@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Keuangan Pribadi</title>
+    <style>
+        /* Reset dan Base Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        header { background: white; border-radius: 15px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); text-align: center; }
+        header h1 { color: #4a5568; margin-bottom: 20px; font-size: 2.5em; }
+        .saldo-container h2 { color: #718096; font-size: 1.2em; margin-bottom: 10px; }
+        .saldo { font-size: 3em; font-weight: 800; color: #2d3748; }
+        .action-buttons { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+        .btn { padding: 15px 25px; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; min-width: 150px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
+        .btn-income { background: linear-gradient(135deg, #48bb78, #38a169); color: white; }
+        .btn-expense { background: linear-gradient(135deg, #f56565, #e53e3e); color: white; }
+        .btn-category { background: linear-gradient(135deg, #4299e1, #3182ce); color: white; }
+        .btn-report { background: linear-gradient(135deg, #ed8936, #d69e2e); color: white; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-secondary { background: #e2e8f0; color: #4a5568; }
+        .form-container, .transaksi-container, .laporan-container { background: white; border-radius: 15px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .form-container h3, .transaksi-container h3, .laporan-container h3 { color: #2d3748; margin-bottom: 25px; font-size: 1.8em; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1em; transition: border-color 0.3s ease; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .form-actions { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+        .transaksi-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e2e8f0; }
+        .transaksi-item:last-child { border-bottom: none; }
+        .transaksi-info { flex: 1; }
+        .transaksi-deskripsi { font-weight: 600; }
+        .transaksi-detail { font-size: 0.9em; color: #718096; }
+        .transaksi-right { display: flex; align-items: center; gap: 15px; }
+        .transaksi-jumlah { font-weight: 700; font-size: 1.2em; }
+        .transaksi-jumlah.pemasukan { color: #38a169; }
+        .transaksi-jumlah.pengeluaran { color: #e53e3e; }
+        .transaksi-actions .btn-icon, .kategori-actions .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px; }
+        .kategori-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f7fafc; border-radius: 8px; margin-bottom: 10px; }
+        .kategori-tipe { padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 600; text-transform: uppercase; margin-left: 10px; }
+        .kategori-tipe.pemasukan { background: #c6f6d5; color: #22543d; }
+        .kategori-tipe.pengeluaran { background: #fed7d7; color: #742a2a; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #718096; }
+        .laporan-section { margin-bottom: 40px; }
+        .laporan-section h4 { font-size: 1.5em; color: #4a5568; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; }
+        .laporan-filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .laporan-filters .form-group { flex: 1; min-width: 200px; margin-bottom: 0; }
+        .laporan-table-container table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .laporan-table-container th, .laporan-table-container td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .laporan-table-container th { background-color: #f7fafc; }
+        .laporan-table-container tfoot td { font-weight: bold; font-size: 1.1em; color: #2d3748; }
+        .notification { position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; z-index: 1000; animation: slideIn 0.3s ease forwards; max-width: 300px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .notification-success { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .notification-error { background: linear-gradient(135deg, #f56565, #e53e3e); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Keuangan Pribadi</h1>
+            <div class="saldo-container">
+                <h2>Saldo Saat Ini</h2>
+                <div class="saldo" id="saldo">Rp 0</div>
+            </div>
+        </header>
+
+        <main>
+            <div class="action-buttons">
+                <button class="btn btn-income" id="btn-tambah-pemasukan">+ Pemasukan</button>
+                <button class="btn btn-expense" id="btn-tambah-pengeluaran">- Pengeluaran</button>
+                <button class="btn btn-category" id="btn-kelola-kategori">📂 Kategori</button>
+                <button class="btn btn-report" id="btn-lihat-laporan">📊 Laporan</button>
+            </div>
+
+            <div class="form-container" id="form-transaksi" style="display: none;">
+                <h3 id="form-title"></h3>
+                <form id="transaksi-form">
+                    <div class="form-group"><label for="jumlah">Jumlah (Rp)</label><input type="number" id="jumlah" required min="1"></div>
+                    <div class="form-group"><label for="kategori">Kategori</label><select id="kategori" required><option value="">Pilih Kategori</option></select></div>
+                    <div class="form-group"><label for="deskripsi">Deskripsi (Opsional)</label><input type="text" id="deskripsi"></div>
+                    <div class="form-group"><label for="tanggal">Tanggal</label><input type="date" id="tanggal" required></div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Simpan</button><button type="button" class="btn btn-secondary" id="btn-batal">Batal</button></div>
+                </form>
+            </div>
+
+            <div class="form-container" id="form-kategori" style="display: none;">
+                <h3>Kelola Kategori</h3>
+                <form id="kategori-form">
+                    <div class="form-group"><label for="nama-kategori">Nama Kategori</label><input type="text" id="nama-kategori" required></div>
+                    <div class="form-group"><label for="tipe-kategori">Tipe</label><select id="tipe-kategori" required><option value="">Pilih Tipe</option><option value="pemasukan">Pemasukan</option><option value="pengeluaran">Pengeluaran</option></select></div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Tambah Kategori</button><button type="button" class="btn btn-secondary" id="btn-tutup-kategori">Tutup</button></div>
+                </form>
+                <div class="kategori-list"><h4>Kategori yang Ada</h4><div id="daftar-kategori"></div></div>
+            </div>
+
+            <div class="laporan-container" id="laporan-container" style="display: none;">
+                <h3>Laporan Keuangan</h3>
+                
+                <!-- Laporan Pemasukan -->
+                <div class="laporan-section">
+                    <h4>Laporan Pemasukan</h4>
+                    <div class="laporan-filters">
+                        <div class="form-group">
+                            <label for="filter-kategori-pemasukan">Filter Kategori</label>
+                            <select id="filter-kategori-pemasukan" class="filter-kategori" data-tipe="pemasukan">
+                                <option value="semua">Semua Kategori</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-tahun-pemasukan">Filter Tahun</label>
+                            <select id="filter-tahun-pemasukan" class="filter-tahun" data-tipe="pemasukan">
+                                <option value="semua">Semua Tahun</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="laporan-table-container" id="laporan-hasil-pemasukan"></div>
+                </div>
+
+                <!-- Laporan Pengeluaran -->
+                <div class="laporan-section">
+                    <h4>Laporan Pengeluaran</h4>
+                    <div class="laporan-filters">
+                        <div class="form-group">
+                            <label for="filter-kategori-pengeluaran">Filter Kategori</label>
+                            <select id="filter-kategori-pengeluaran" class="filter-kategori" data-tipe="pengeluaran">
+                                <option value="semua">Semua Kategori</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-tahun-pengeluaran">Filter Tahun</label>
+                            <select id="filter-tahun-pengeluaran" class="filter-tahun" data-tipe="pengeluaran">
+                                <option value="semua">Semua Tahun</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="laporan-table-container" id="laporan-hasil-pengeluaran"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-tutup-laporan">Tutup</button>
+                </div>
+            </div>
+
+            <div class="transaksi-container">
+                <h3>Riwayat Transaksi Terbaru</h3>
+                <div id="daftar-transaksi"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ------------------- DataManager.js -------------------
+        class DataManager {
+            constructor() {
+                this.STORAGE_KEYS = { SALDO: 'keuangan_saldo', TRANSAKSI: 'keuangan_transaksi', KATEGORI: 'keuangan_kategori' };
+                this.SALDO_AWAL = 1959580;
+                this.initializeData();
+            }
+            initializeData() {
+                if (!localStorage.getItem(this.STORAGE_KEYS.SALDO)) this.setSaldo(this.SALDO_AWAL);
+                if (!localStorage.getItem(this.STORAGE_KEYS.KATEGORI)) {
+                    this.setKategori([
+                        { id: 'gaji', nama: 'Gaji', tipe: 'pemasukan' }, { id: 'bonus', nama: 'Bonus', tipe: 'pemasukan' },
+                        { id: 'makanan', nama: 'Makanan', tipe: 'pengeluaran' }, { id: 'transportasi', nama: 'Transportasi', tipe: 'pengeluaran' },
+                        { id: 'belanja', nama: 'Belanja', tipe: 'pengeluaran' }, { id: 'hiburan', nama: 'Hiburan', tipe: 'pengeluaran' }
+                    ]);
+                }
+                if (!localStorage.getItem(this.STORAGE_KEYS.TRANSAKSI)) this.setTransaksi([]);
+            }
+            getSaldo() { return parseInt(localStorage.getItem(this.STORAGE_KEYS.SALDO) || this.SALDO_AWAL); }
+            setSaldo(saldo) { localStorage.setItem(this.STORAGE_KEYS.SALDO, saldo.toString()); }
+            updateSaldo(jumlah, tipe) {
+                const saldoSaatIni = this.getSaldo();
+                const saldoBaru = tipe === 'pemasukan' ? saldoSaatIni + jumlah : saldoSaatIni - jumlah;
+                this.setSaldo(saldoBaru);
+            }
+            getTransaksi() { return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.TRANSAKSI) || '[]'); }
+            setTransaksi(transaksi) { localStorage.setItem(this.STORAGE_KEYS.TRANSAKSI, JSON.stringify(transaksi)); }
+            tambahTransaksi(data) {
+                const transaksi = { ...data, id: 'txn_' + Date.now(), timestamp: new Date().toISOString() };
+                const daftar = this.getTransaksi();
+                daftar.unshift(transaksi);
+                this.setTransaksi(daftar);
+                this.updateSaldo(transaksi.jumlah, transaksi.tipe);
+                return transaksi;
+            }
+            editTransaksi(id, dataUpdate) {
+                const daftar = this.getTransaksi();
+                const index = daftar.findIndex(t => t.id === id);
+                if (index === -1) throw new Error('Transaksi tidak ditemukan');
+                const lama = daftar[index];
+                this.updateSaldo(lama.jumlah, lama.tipe === 'pemasukan' ? 'pengeluaran' : 'pemasukan');
+                const baru = { ...lama, ...dataUpdate, jumlah: parseInt(dataUpdate.jumlah) };
+                daftar[index] = baru;
+                this.updateSaldo(baru.jumlah, baru.tipe);
+                this.setTransaksi(daftar);
+                return baru;
+            }
+            hapusTransaksi(id) {
+                const daftar = this.getTransaksi();
+                const transaksi = daftar.find(t => t.id === id);
+                if (!transaksi) throw new Error('Transaksi tidak ditemukan');
+                this.updateSaldo(transaksi.jumlah, transaksi.tipe === 'pemasukan' ? 'pengeluaran' : 'pemasukan');
+                this.setTransaksi(daftar.filter(t => t.id !== id));
+                return transaksi;
+            }
+            getKategori() { return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.KATEGORI) || '[]'); }
+            setKategori(kategori) { localStorage.setItem(this.STORAGE_KEYS.KATEGORI, JSON.stringify(kategori)); }
+            tambahKategori(nama, tipe) {
+                const id = nama.toLowerCase().replace(/\s+/g, '_');
+                const daftar = this.getKategori();
+                if (daftar.some(k => k.id === id)) throw new Error('Kategori sudah ada');
+                const baru = { id, nama, tipe };
+                daftar.push(baru);
+                this.setKategori(daftar);
+                return baru;
+            }
+            hapusKategori(id) {
+                if (this.getTransaksi().some(t => t.kategori === id)) throw new Error('Kategori masih digunakan');
+                this.setKategori(this.getKategori().filter(k => k.id !== id));
+            }
+            getKategoriByTipe(tipe) { return this.getKategori().filter(k => k.tipe === tipe); }
+            getLaporan({ tipe, kategori, tahun }) {
+                let transaksi = this.getTransaksi().filter(t => t.tipe === tipe);
+
+                if (kategori !== 'semua') {
+                    transaksi = transaksi.filter(t => t.kategori === kategori);
+                }
+                if (tahun !== 'semua') {
+                    transaksi = transaksi.filter(t => new Date(t.tanggal).getFullYear() == tahun);
+                }
+                
+                return transaksi.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+            }
+            getTahunTransaksi() {
+                const tahun = new Set(this.getTransaksi().map(t => new Date(t.tanggal).getFullYear()));
+                return Array.from(tahun).sort((a, b) => b - a);
+            }
+            formatRupiah(angka) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka); }
+            formatTanggal(tgl) { return new Date(tgl).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); }
+        }
+
+        // ------------------- UIManager.js -------------------
+        class UIManager {
+            constructor(dataManager) {
+                this.dataManager = dataManager;
+                this.editingTransactionId = null;
+                this.currentTransactionType = null;
+                this.el = {
+                    saldo: document.getElementById('saldo'),
+                    btnTambahPemasukan: document.getElementById('btn-tambah-pemasukan'),
+                    btnTambahPengeluaran: document.getElementById('btn-tambah-pengeluaran'),
+                    btnKelolaKategori: document.getElementById('btn-kelola-kategori'),
+                    btnLihatLaporan: document.getElementById('btn-lihat-laporan'),
+                    formTransaksi: document.getElementById('form-transaksi'),
+                    formTransaksiElement: document.getElementById('transaksi-form'),
+                    formTitle: document.getElementById('form-title'),
+                    btnBatal: document.getElementById('btn-batal'),
+                    inputJumlah: document.getElementById('jumlah'),
+                    selectKategori: document.getElementById('kategori'),
+                    inputDeskripsi: document.getElementById('deskripsi'),
+                    inputTanggal: document.getElementById('tanggal'),
+                    formKategori: document.getElementById('form-kategori'),
+                    formKategoriElement: document.getElementById('kategori-form'),
+                    btnTutupKategori: document.getElementById('btn-tutup-kategori'),
+                    inputNamaKategori: document.getElementById('nama-kategori'),
+                    selectTipeKategori: document.getElementById('tipe-kategori'),
+                    daftarTransaksi: document.getElementById('daftar-transaksi'),
+                    daftarKategori: document.getElementById('daftar-kategori'),
+                    laporanContainer: document.getElementById('laporan-container'),
+                    btnTutupLaporan: document.getElementById('btn-tutup-laporan'),
+                    filterKategoriPemasukan: document.getElementById('filter-kategori-pemasukan'),
+                    filterTahunPemasukan: document.getElementById('filter-tahun-pemasukan'),
+                    laporanHasilPemasukan: document.getElementById('laporan-hasil-pemasukan'),
+                    filterKategoriPengeluaran: document.getElementById('filter-kategori-pengeluaran'),
+                    filterTahunPengeluaran: document.getElementById('filter-tahun-pengeluaran'),
+                    laporanHasilPengeluaran: document.getElementById('laporan-hasil-pengeluaran'),
+                };
+                this.el.inputTanggal.value = new Date().toISOString().split('T')[0];
+            }
+            updateSaldoDisplay() { this.el.saldo.textContent = this.dataManager.formatRupiah(this.dataManager.getSaldo()); }
+            showFormTransaksi(tipe, id = null) {
+                this.editingTransactionId = id;
+                this.currentTransactionType = tipe;
+                this.el.formTransaksi.style.display = 'block';
+                this.updateKategoriOptions(tipe);
+                if (id) {
+                    this.el.formTitle.textContent = 'Edit Transaksi';
+                    const txn = this.dataManager.getTransaksi().find(t => t.id === id);
+                    if (txn) {
+                        this.el.inputJumlah.value = txn.jumlah;
+                        this.el.selectKategori.value = txn.kategori;
+                        this.el.inputDeskripsi.value = txn.deskripsi;
+                        this.el.inputTanggal.value = txn.tanggal;
+                    }
+                } else {
+                    this.el.formTitle.textContent = `Tambah ${tipe === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'}`;
+                    this.el.formTransaksiElement.reset();
+                    this.el.inputTanggal.value = new Date().toISOString().split('T')[0];
+                }
+            }
+            hideFormTransaksi() { this.el.formTransaksi.style.display = 'none'; this.editingTransactionId = null; }
+            updateKategoriOptions(tipe) {
+                this.el.selectKategori.innerHTML = '<option value="">Pilih Kategori</option>';
+                this.dataManager.getKategoriByTipe(tipe).forEach(kat => {
+                    this.el.selectKategori.innerHTML += `<option value="${kat.id}">${kat.nama}</option>`;
+                });
+            }
+            updateKategoriList() {
+                const kategori = this.dataManager.getKategori();
+                this.el.daftarKategori.innerHTML = kategori.length ? kategori.map(kat => `
+                    <div class="kategori-item">
+                        <div class="kategori-info"><span class="kategori-nama">${kat.nama}</span><span class="kategori-tipe ${kat.tipe}">${kat.tipe}</span></div>
+                        <div class="kategori-actions"><button class="btn-icon btn-delete-kategori" data-id="${kat.id}" title="Hapus">🗑️</button></div>
+                    </div>`).join('') : '<div class="empty-state"><p>Belum ada kategori</p></div>';
+            }
+            updateTransaksiList() {
+                const transaksi = this.dataManager.getTransaksi().sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)).slice(0, 10);
+                this.el.daftarTransaksi.innerHTML = transaksi.length ? transaksi.map(txn => {
+                    const kat = this.dataManager.getKategori().find(k => k.id === txn.kategori);
+                    return `
+                    <div class="transaksi-item">
+                        <div class="transaksi-info">
+                            <div class="transaksi-deskripsi">${txn.deskripsi || (kat ? kat.nama : 'Lainnya')}</div>
+                            <div class="transaksi-detail">${kat ? kat.nama : ''} • ${this.dataManager.formatTanggal(txn.tanggal)}</div>
+                        </div>
+                        <div class="transaksi-right">
+                            <div class="transaksi-jumlah ${txn.tipe}">${txn.tipe === 'pemasukan' ? '+' : '-'}${this.dataManager.formatRupiah(txn.jumlah)}</div>
+                            <div class="transaksi-actions">
+                                <button class="btn-icon btn-edit-transaksi" data-id="${txn.id}" title="Edit">✏️</button>
+                                <button class="btn-icon btn-delete-transaksi" data-id="${txn.id}" title="Hapus">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('') : '<div class="empty-state"><p>Belum ada transaksi</p></div>';
+            }
+            renderLaporan(tipe, kategori, tahun) {
+                const container = tipe === 'pemasukan' ? this.el.laporanHasilPemasukan : this.el.laporanHasilPengeluaran;
+                const transaksi = this.dataManager.getLaporan({ tipe, kategori, tahun });
+                if (transaksi.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>Tidak ada data untuk filter ini.</p></div>';
+                    return;
+                }
+                let total = 0;
+                let tableHTML = '<table><thead><tr><th>Tanggal</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th></tr></thead><tbody>';
+                transaksi.forEach(txn => {
+                    const kat = this.dataManager.getKategori().find(k => k.id === txn.kategori);
+                    tableHTML += `
+                        <tr>
+                            <td>${this.dataManager.formatTanggal(txn.tanggal)}</td>
+                            <td>${kat ? kat.nama : 'Lainnya'}</td>
+                            <td>${txn.deskripsi || '-'}</td>
+                            <td>${this.dataManager.formatRupiah(txn.jumlah)}</td>
+                        </tr>`;
+                    total += txn.jumlah;
+                });
+                tableHTML += `</tbody><tfoot><tr><td colspan="3"><strong>Total</strong></td><td><strong>${this.dataManager.formatRupiah(total)}</strong></td></tr></tfoot></table>`;
+                container.innerHTML = tableHTML;
+            }
+            populateLaporanFilters() {
+                const tahunList = this.dataManager.getTahunTransaksi();
+                const populate = (elTahun, elKategori, tipe) => {
+                    elTahun.innerHTML = '<option value="semua">Semua Tahun</option>';
+                    tahunList.forEach(t => elTahun.innerHTML += `<option value="${t}">${t}</option>`);
+                    elKategori.innerHTML = '<option value="semua">Semua Kategori</option>';
+                    this.dataManager.getKategoriByTipe(tipe).forEach(k => elKategori.innerHTML += `<option value="${k.id}">${k.nama}</option>`);
+                };
+                populate(this.el.filterTahunPemasukan, this.el.filterKategoriPemasukan, 'pemasukan');
+                populate(this.el.filterTahunPengeluaran, this.el.filterKategoriPengeluaran, 'pengeluaran');
+            }
+            showNotification(message, type = 'success') {
+                const notif = document.createElement('div');
+                notif.className = `notification notification-${type}`;
+                notif.textContent = message;
+                document.body.appendChild(notif);
+                setTimeout(() => {
+                    notif.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => notif.remove(), 300);
+                }, 3000);
+            }
+            validate(pairs) {
+                for (const [element, message] of pairs) {
+                    if (!element.value || (element.type === 'number' && element.value <= 0)) {
+                        this.showNotification(message, 'error');
+                        element.focus();
+                        return false;
+                    }
+                }
+                return true;
+            }
+            getTransaksiFormData() {
+                return {
+                    jumlah: parseInt(this.el.inputJumlah.value), kategori: this.el.selectKategori.value,
+                    deskripsi: this.el.inputDeskripsi.value.trim(), tanggal: this.el.inputTanggal.value,
+                    tipe: this.currentTransactionType
+                };
+            }
+            updateAllDisplays() {
+                this.updateSaldoDisplay();
+                this.updateTransaksiList();
+                if (this.el.formKategori.style.display === 'block') this.updateKategoriList();
+                if (this.el.laporanContainer.style.display === 'block') {
+                    this.populateLaporanFilters();
+                    this.renderLaporan('pemasukan', this.el.filterKategoriPemasukan.value, this.el.filterTahunPemasukan.value);
+                    this.renderLaporan('pengeluaran', this.el.filterKategoriPengeluaran.value, this.el.filterTahunPengeluaran.value);
+                }
+            }
+        }
+
+        // ------------------- App.js -------------------
+        class App {
+            constructor() {
+                this.dataManager = new DataManager();
+                this.uiManager = new UIManager(this.dataManager);
+                this.setupEventListeners();
+                this.uiManager.updateAllDisplays();
+            }
+            setupEventListeners() {
+                const { el } = this.uiManager;
+                el.btnTambahPemasukan.addEventListener('click', () => this.uiManager.showFormTransaksi('pemasukan'));
+                el.btnTambahPengeluaran.addEventListener('click', () => this.uiManager.showFormTransaksi('pengeluaran'));
+                el.btnKelolaKategori.addEventListener('click', () => { el.formKategori.style.display = 'block'; this.uiManager.updateKategoriList(); });
+                el.btnLihatLaporan.addEventListener('click', () => {
+                    el.laporanContainer.style.display = 'block';
+                    this.uiManager.updateAllDisplays();
+                });
+                el.btnBatal.addEventListener('click', () => this.uiManager.hideFormTransaksi());
+                el.btnTutupKategori.addEventListener('click', () => { el.formKategori.style.display = 'none'; });
+                el.btnTutupLaporan.addEventListener('click', () => { el.laporanContainer.style.display = 'none'; });
+                el.formTransaksiElement.addEventListener('submit', e => this.handleSubmitTransaksi(e));
+                el.formKategoriElement.addEventListener('submit', e => this.handleSubmitKategori(e));
+                
+                // Event listeners untuk filter laporan
+                el.filterKategoriPemasukan.addEventListener('change', () => this.uiManager.renderLaporan('pemasukan', el.filterKategoriPemasukan.value, el.filterTahunPemasukan.value));
+                el.filterTahunPemasukan.addEventListener('change', () => this.uiManager.renderLaporan('pemasukan', el.filterKategoriPemasukan.value, el.filterTahunPemasukan.value));
+                el.filterKategoriPengeluaran.addEventListener('change', () => this.uiManager.renderLaporan('pengeluaran', el.filterKategoriPengeluaran.value, el.filterTahunPengeluaran.value));
+                el.filterTahunPengeluaran.addEventListener('change', () => this.uiManager.renderLaporan('pengeluaran', el.filterKategoriPengeluaran.value, el.filterTahunPengeluaran.value));
+
+                el.daftarTransaksi.addEventListener('click', e => this.handleAksiTransaksi(e));
+                el.daftarKategori.addEventListener('click', e => this.handleAksiKategori(e));
+            }
+            handleSubmitTransaksi(e) {
+                e.preventDefault();
+                if (!this.uiManager.validate([
+                    [this.uiManager.el.inputJumlah, 'Jumlah harus diisi'],
+                    [this.uiManager.el.selectKategori, 'Kategori harus dipilih'],
+                    [this.uiManager.el.inputTanggal, 'Tanggal harus diisi']
+                ])) return;
+                
+                const data = this.uiManager.getTransaksiFormData();
+                try {
+                    const message = this.uiManager.editingTransactionId
+                        ? (this.dataManager.editTransaksi(this.uiManager.editingTransactionId, data), 'Transaksi diperbarui')
+                        : (this.dataManager.tambahTransaksi(data), 'Transaksi ditambahkan');
+                    this.uiManager.showNotification(message, 'success');
+                    this.uiManager.hideFormTransaksi();
+                    this.uiManager.updateAllDisplays();
+                } catch (error) { this.uiManager.showNotification(error.message, 'error'); }n            }
+            handleSubmitKategori(e) {
+                e.preventDefault();
+                if (!this.uiManager.validate([
+                    [this.uiManager.el.inputNamaKategori, 'Nama kategori harus diisi'],
+                    [this.uiManager.el.selectTipeKategori, 'Tipe kategori harus dipilih']
+                ])) return;
+
+                try {
+                    const nama = this.uiManager.el.inputNamaKategori.value.trim();
+                    const tipe = this.uiManager.el.selectTipeKategori.value;
+                    this.dataManager.tambahKategori(nama, tipe);
+                    this.uiManager.showNotification('Kategori ditambahkan', 'success');
+                    this.uiManager.el.formKategoriElement.reset();
+                    this.uiManager.updateKategoriList();
+                } catch (error) { this.uiManager.showNotification(error.message, 'error'); }n            }
+            handleAksiTransaksi(e) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.classList.contains('btn-edit-transaksi')) {
+                    const txn = this.dataManager.getTransaksi().find(t => t.id === id);
+                    if (txn) this.uiManager.showFormTransaksi(txn.tipe, id);
+                } else if (btn.classList.contains('btn-delete-transaksi')) {
+                    if (confirm('Yakin ingin menghapus transaksi ini?')) {
+                        this.dataManager.hapusTransaksi(id);
+                        this.uiManager.showNotification('Transaksi dihapus', 'success');
+                        this.uiManager.updateAllDisplays();
+                    }
+                }
+            }
+            handleAksiKategori(e) {
+                const btn = e.target.closest('button.btn-delete-kategori');
+                if (!btn) return;
+                if (confirm('Yakin ingin menghapus kategori ini?')) {
+                    try {
+                        this.dataManager.hapusKategori(btn.dataset.id);
+                        this.uiManager.showNotification('Kategori dihapus', 'success');
+                        this.uiManager.updateKategoriList();
+                    } catch (error) { this.uiManager.showNotification(error.message, 'error'); }
+                }
+            }
+        }
+
+        // Inisialisasi aplikasi saat DOM siap
+        document.addEventListener('DOMContentLoaded', () => new App());
+    </script>
+</body>
+</html>
+
+
